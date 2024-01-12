@@ -16,9 +16,9 @@ uint8_t buttons[] = { BUTTON1PIN, BUTTON2PIN, BUTTON3PIN };  // Add BUTTONXPIN t
 
 
 // Vordefinition eigener Funktionen
-void sendMidiMessage(uint8_t ccCommand, bool state)
-void controlChange(byte channel, byte control, byte value)
-void controlLED(uint8_t led, uint8_t state)
+void sendMidiMessage(uint8_t ccCommand, bool state);
+void controlChange(byte channel, byte control, byte value);
+void controlLED(uint8_t led, uint8_t state);
 
 
 
