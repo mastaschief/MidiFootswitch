@@ -15,26 +15,17 @@
 uint8_t buttons[] = { BUTTON1PIN, BUTTON2PIN, BUTTON3PIN };  // Add BUTTONXPIN to list
 
 
+// Vordefinition eigener Funktionen
+void sendMidiMessage(uint8_t ccCommand, bool state)
+void controlChange(byte channel, byte control, byte value)
+void controlLED(uint8_t led, uint8_t state)
+
+
+
 // Automatisch generierte Arrays/Variablen
 CRGB leds[NUM_LEDS];
 bool states[sizeof(buttons)] = {};
 long debounce[sizeof(buttons)] = {};  // Array to debounce the buttons
-
-// Eigene Funktionen
-void controlChange(byte channel, byte control, byte value) {  // Funktion für das Ansteuern von Midi-Devices
-  midiEventPacket_t event = { 0x0B, 0xB0 | channel, control, value };
-  MidiUSB.sendMIDI(event);
-}
-
-void sendMidiMessage(uint8_t ccCommand, bool state)  // ccCommand is the desired cc , state is the current state of the switch
-{
-  if (state) {
-    controlChange(ccCommand, 10, 127);  // Turn On
-  } else {
-    controlChange(ccCommand, 10, 1);  // Turn Off
-  }
-  MidiUSB.flush();  // Send Midi Message
-}
 
 
 
@@ -55,6 +46,42 @@ void setup() {
   leds[1] = CRGB::Green;
   leds[2] = CRGB::Blue;
   FastLED.show();
+}
+
+
+void loop() {
+  for (size_t i = 0; i < sizeof(buttons); i++) {
+    if (millis() - debounce[i] > DEBOUNCEVALUE)  // check if button is ready for the next press
+    {
+      if (!digitalRead(buttons[i]))  // read if button is pressed
+      {
+        states[i] = !states[i];                 // change state
+        uint8_t ccMessage = i + 1;              // can't be 0
+        sendMidiMessage(ccMessage, states[i]);  // send midi CC message
+
+        controlLED(i, states[i]);  // Set LED
+        debounce[i] = millis();    // Debounce
+      }
+    }
+  }
+}
+
+
+
+// Eigene Funktionen
+void controlChange(byte channel, byte control, byte value) {  // Funktion für das Ansteuern von Midi-Devices
+  midiEventPacket_t event = { 0x0B, 0xB0 | channel, control, value };
+  MidiUSB.sendMIDI(event);
+}
+
+void sendMidiMessage(uint8_t ccCommand, bool state)  // ccCommand is the desired cc , state is the current state of the switch
+{
+  if (state) {
+    controlChange(ccCommand, 10, 127);  // Turn On
+  } else {
+    controlChange(ccCommand, 10, 1);  // Turn Off
+  }
+  MidiUSB.flush();  // Send Midi Message
 }
 
 void controlLED(uint8_t led, uint8_t state) {  // Funktion zum Ansteuern der LEDs
@@ -82,21 +109,4 @@ void controlLED(uint8_t led, uint8_t state) {  // Funktion zum Ansteuern der LED
       break;
   }
   FastLED.show();
-}
-
-void loop() {
-  for (size_t i = 0; i < sizeof(buttons); i++) {
-    if (millis() - debounce[i] > DEBOUNCEVALUE)  // check if button is ready for the next press
-    {
-      if (!digitalRead(buttons[i]))  // read if button is pressed
-      {
-        states[i] = !states[i];                 // change state
-        uint8_t ccMessage = i + 1;              // can't be 0
-        sendMidiMessage(ccMessage, states[i]);  // send midi CC message
-
-        controlLED(i, states[i]);  // Set LED
-        debounce[i] = millis();    // Debounce
-      }
-    }
-  }
 }
